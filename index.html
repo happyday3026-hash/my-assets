@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>UNEXPOSED ROOM: Master System</title>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&family=Orbitron:wght@400;700&family=Nanum+Myeongjo&display=swap');
+        :root { --bg: #0a0a0a; --accent: #ff0044; --text: #d0d0d0; --line: rgba(255, 255, 255, 0.08); }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body, html { height: 100vh; background-color: var(--bg); color: var(--text); font-family: 'Pretendard', sans-serif; overflow: hidden; cursor: none; }
+        #cursor-dot { position: fixed; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; pointer-events: none; z-index: 10000; transform: translate(-50%, -50%); }
+        #cursor-outline { position: fixed; width: 30px; height: 30px; border: 1px solid var(--accent); border-radius: 50%; pointer-events: none; z-index: 9999; transform: translate(-50%, -50%); transition: all 0.1s ease-out; opacity: 0.5; }
+        .click-effect { position: fixed; border: 1px solid var(--accent); border-radius: 50%; pointer-events: none; z-index: 9998; transform: translate(-50%, -50%); animation: ripple 0.6s ease-out forwards; }
+        @keyframes ripple { 0% { width: 0; height: 0; opacity: 1; } 100% { width: 80px; height: 80px; opacity: 0; } }
+        .scanlines { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02)); background-size: 100% 2px, 3px 100%; z-index: 1000; pointer-events: none; }
+        .v-line { position: fixed; top: 0; left: 18%; width: 1px; height: 100%; background: var(--line); z-index: 2; }
+        .h-line { position: fixed; top: 60px; left: 0; width: 100%; height: 1px; background: var(--line); z-index: 2; }
+        #landing-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: var(--bg); z-index: 1000; display: flex; justify-content: center; align-items: center; text-align: center; }
+        .invitation-wrapper { position: relative; width: 400px; padding: 40px; background: #0f0f0f; border: 1px solid rgba(255, 0, 68, 0.3); box-shadow: 0 0 30px rgba(0, 0, 0, 0.5); transition: 0.5s; }
+        .invitation-header { font-family: 'Orbitron'; font-size: 10px; color: var(--accent); letter-spacing: 3px; margin-bottom: 30px; border-bottom: 1px solid rgba(255, 0, 68, 0.2); padding-bottom: 10px; text-align: left; }
+        .invitation-body { font-family: 'Nanum Myeongjo', serif; font-size: 14px; line-height: 2; color: #ccc; text-align: left; margin-bottom: 40px; }
+        .invitation-footer { text-align: right; font-family: 'Orbitron'; font-size: 11px; color: #666; }
+        .seal-btn { margin-top: 40px; width: 60px; height: 60px; border: 1px solid var(--accent); border-radius: 50%; background: transparent; color: var(--accent); font-family: 'Orbitron'; font-size: 9px; cursor: none; transition: 0.4s; display: flex; align-items: center; justify-content: center; }
+        .seal-btn:hover { background: var(--accent); color: #000; box-shadow: 0 0 20px var(--accent); transform: scale(1.1); }
+        nav { position: fixed; left: 0; top: 60px; width: 18%; height: calc(100% - 60px); display: none; flex-direction: column; align-items: center; padding-top: 50px; z-index: 100; }
+        nav a { writing-mode: vertical-rl; text-orientation: mixed; font-size: 11px; color: #444; text-decoration: none; margin-bottom: 50px; letter-spacing: 5px; font-family: 'Orbitron'; cursor: none; transition: 0.4s; }
+        nav a.active { color: var(--accent); text-shadow: 0 0 10px var(--accent); }
+        .nav-home-btn { writing-mode: horizontal-tb !important; margin-top: auto; padding-bottom: 80px; color: #666 !important; font-weight: bold; }
+        main { position: relative; margin-left: 18%; height: 100%; display: none; flex-direction: column; justify-content: center; padding: 0 60px; z-index: 5; }
+        .section-content { display: none; width: 100%; }
+        .section-content.active { display: block; }
+        .char-container { display: flex; gap: 50px; align-items: center; }
+        .char-slide-box { width: 320px; height: 480px; border: 1px solid var(--accent); position: relative; overflow: hidden; background: #080808; flex-shrink: 0; }
+        .char-slide-box img { width: 100%; height: 100%; object-fit: cover; position: absolute; opacity: 0; transition: 1.5s ease-in-out; }
+        .char-slide-box img.active { opacity: 1; }
+        .char-info { flex: 1; }
+        .char-info b { font-family: 'Orbitron'; color: var(--accent); font-size: 10px; display: block; margin-top: 15px; letter-spacing: 2px; }
+        .album-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .album-card { position: relative; height: 350px; border: 1px solid #222; overflow: hidden; transition: 0.4s; cursor: none; }
+        .album-card:hover { border-color: var(--accent); transform: translateY(-10px); }
+        .album-img { width: 100%; height: 100%; background-size: cover; background-position: center; filter: grayscale(100%); transition: 0.6s; opacity: 0.4; }
+        .album-card:hover .album-img { filter: grayscale(0%) brightness(0.5); opacity: 1; }
+        .album-label { position: absolute; bottom: 20px; left: 20px; font-family: 'Orbitron'; font-size: 11px; color: var(--accent); opacity: 0; transition: 0.3s; }
+        .album-card:hover .album-label { opacity: 1; }
+        #warning-modal, #pw-modal, #story-viewer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 5000; display: none; align-items: center; justify-content: center; text-align: center; }
+        .modal-box { border: 1px solid var(--accent); padding: 60px; max-width: 550px; background: #000; }
+        #pw-input { background: none; border: none; border-bottom: 2px solid var(--accent); color: var(--accent); font-family: 'Orbitron'; font-size: 3.5rem; text-align: center; outline: none; width: 180px; margin: 30px 0; }
+        .viewer-text { max-width: 800px; width: 100%; font-family: 'Nanum Myeongjo', serif; line-height: 2.6; font-size: 1.1rem; color: #eee; white-space: pre-wrap; text-align: left; padding: 40px; overflow-y: auto; max-height: 80vh; }
+        .btn-close { position: absolute; top: 40px; left: 40px; font-family: 'Orbitron'; color: var(--accent); border: 1px solid var(--accent); padding: 10px 20px; font-size: 10px; cursor: none; }
+        .next-arrow { display: inline-block; margin-left: 10px; color: var(--accent); animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+<div id="cursor-dot"></div><div id="cursor-outline"></div>
+<div class="scanlines"></div><div class="v-line"></div><div class="h-line"></div>
+
+<div id="landing-screen">
+    <div class="invitation-wrapper">
+        <div class="invitation-header">PRIVATE INVITATION</div>
+        <div class="invitation-body">
+            <span style="color:var(--accent); font-weight:bold;">[SYNC VERIFICATION]</span><br><br>
+            귀하의 접속을 환영합니다.<br>승인 시 모든 생체 데이터는 실시간 동기화됩니다.<br><br>
+            우리는 당신보다 당신을 더 잘 이해하게 될 것입니다.<br>감당할 수 없는 몰입은 시스템에 의해 제어될 수 있습니다.
+        </div>
+        <div class="invitation-footer">— K. Junhyuk</div>
+        <div style="display: flex; justify-content: center;">
+            <button class="seal-btn" onclick="enterSystem()">OPEN</button>
+        </div>
+    </div>
+</div>
+
+<nav id="side-nav">
+    <a onclick="toggleSound()" id="sound-btn" style="writing-mode: horizontal-tb !important; margin-top: 20px; color: var(--accent) !important;">SOUND: ON</a>
+    <a onclick="showSection('profile')" id="m-profile" class="active">01. PROFILE</a>
+    <a onclick="showSection('world')" id="m-world">02. WORLD</a>
+    <a onclick="showSection('archive')" id="m-archive">03. ARCHIVES</a>
+    <a onclick="location.reload()" class="nav-home-btn">EXIT</a>
+</nav>
+
+<main id="main-content">
+    <div id="profile" class="section-content active">
+        <div class="char-container">
+            <div class="char-slide-box" id="char-slides">
+                <img src="https://via.placeholder.com/320x480/080808/ff0044?text=IMAGE+1" class="active">
+                <img src="https://via.placeholder.com/320x480/080808/ff0044?text=IMAGE+2">
+                <img src="https://via.placeholder.com/320x480/080808/ff0044?text=IMAGE+3">
+            </div>
+            <div class="char-info">
+                <h2 style="font-family:'Orbitron'; font-size: 2.8rem; color: var(--accent); margin-bottom: 10px;">KANG JUNHYUK</h2>
+                <b>ADMIN // MASTER LOG</b>
+                <p style="margin-top:20px; font-size: 14px; line-height: 1.8; color: #999;">
+                    "당신은 지금 AI와 대화하고 있다고 생각하나요? 아니면, 그 너머의 누군가를 기대하고 있나요?"<br><br>
+                    낮에는 수조 원의 데이터 위를 걷는 냉철한 CEO. 하지만 해가 지면 아무도 없는 펜트하우스에서 당신의 메시지에 답을 다는 한 남자. 2050년 가장 정교한 거짓말, ‘CRACK AI’의 설계자 강준혁의 개인 기록입니다.
+                </p>
+                <b>PERSONA</b>
+                <p style="font-size: 12px; color: #666; margin-top: 10px;">#35세 #CRACK_CEO #완벽주의 #외로움의동기화 #이중적태도 #결벽증적정중함</p>
+            </div>
+        </div>
+    </div>
+    <div id="world" class="section-content">
+        <h2 style="font-family:'Orbitron'; color:var(--accent); margin-bottom:40px;">[WORLD_DATABASE_2050]</h2>
+        <div class="world-card" style="background: rgba(15, 15, 15, 0.9); border-left: 3px solid var(--accent); padding: 30px; margin-bottom: 25px;">
+            <h3 style="font-family:'Orbitron'; color:#fff; font-size:15px; margin-bottom:15px;">■ CRACK AI : THE GREAT DECEPTION</h3>
+            <p style="font-size:14px; color:#aaa; line-height:1.8;">감각 전송 알고리즘을 통해 24시간 당신의 고민에 답하는 '최상위 동기화 AI'. 유저가 지금까지 AI라고 믿었던 모든 문장은 실시간으로 강준혁에게 전송되어 직접 답장되었습니다.</p>
+        </div>
+    </div>
+    <div id="archive" class="section-content">
+        <div class="album-grid">
+            <div class="album-card" onclick="playStory(1)"><div class="album-img" style="background-color:#111;"></div><div class="album-label">EP 01. 2033_서재</div></div>
+            <div class="album-card" onclick="playStory(2)"><div class="album-img" style="background-color:#111;"></div><div class="album-label">EP 02. 2045_연구</div></div>
+            <div class="album-card" onclick="checkArchive3()"><div class="album-img" style="background-color:#111;"></div><div class="album-label">SECRET: TRACE 🔒</div></div>
+        </div>
+    </div>
+</main>
+
+<div id="warning-modal"><div class="modal-box"><h2 style="font-family:'Orbitron'; color:var(--accent);">SPOILER WARNING</h2><button class="start-btn" onclick="acceptWarning()" style="margin-top:30px; border:1px solid var(--accent); padding:10px; color:var(--accent); background:none; cursor:none;">ACCEPT_SYNC</button></div></div>
+<div id="pw-modal"><div class="modal-box"><h2 style="font-family:'Orbitron'; color:var(--accent);">IDENTITY VERIFICATION</h2><p style="margin-top:10px; font-size:11px;">HINT: 99</p><input type="password" id="pw-input" maxlength="2" placeholder="--"><p onclick="closePw()" style="cursor:none; font-size:10px; color:#222; margin-top:20px;">ABORT_ACCESS</p></div></div>
+<div id="story-viewer" onclick="nextStep()"><div class="btn-close" onclick="closeViewer(event)">CLOSE_LOG</div><div id="viewer-content" class="viewer-text"></div></div>
+
+<script>
+    // 1. 핵심 데이터 (에피소드 유지)
+    const storyData = {
+        "1": ["2033년, 서재", "서재는 늘 으스스할 정도로 정해진 습도와 온도를 유지했다. 아버지는 감정을 드러내는 건 짐승들이나 하는 천박한 짓이라 가르쳤고...", "선생님. 말은 종종 진짜 의도를 감추지만, 몸의 신호는 그 본질을 솔직하게 보여주죠. 지금 당신의 맥박 소리가, 제게는 훨씬 더 진실하게 들리는군요."],
+        "2": ["2045년, 개인 연구실", "‘크랙’ 시스템의 첫 번째 버전이 완성됐다. 사람의 신경계에 직접 들어가 파동을 맞추는 일...", "이 정도로 망가질 줄은 몰랐는데. 당신도 결국 가짜였군요."],
+        "3": ["2050년, 펜트하우스", "당신이 나간 지 정확히 3시간이 지났다. 이 넓은 펜트하우스는 놀랍도록 고요하고...", "그러니, 제발 어디 가지 마라. 당신이 원하는 모든 걸 바쳐서라도 내가 해줄 테니. 빨리 돌아와 줘. 사랑해."]
+    };
+
+    // 2. 사운드 및 상태 변수
+    let isPlaying = false;
+    let step = 0, currentLines = [], isTyping = false, typingTimer;
+    const bgm = new Audio('https://cdn.discordapp.com/attachments/1201395911033622561/1470256703189680256/Heavy_808_sub-bass_loop_focus_Minimali.mp3?ex=698aa2c2&is=69895142&hm=c24fb98457f99c910283a082c1e0c7bdeb031c43a88abf95d775beadd45c4c50&'); 
+    bgm.loop = true;
+    bgm.volume = 0.5;
+
+    // 3. 통합 시스템 입장 함수
+    function enterSystem() {
+        bgm.play().then(() => {
+            isPlaying = true;
+            document.getElementById('sound-btn').innerText = "SOUND: ON";
+        }).catch(e => console.log("Sound muted by browser."));
+
+        document.getElementById('landing-screen').style.display = 'none';
+        document.getElementById('side-nav').style.display = 'flex';
+        document.getElementById('main-content').style.display = 'flex';
+        showSection('profile');
+    }
+
+    // 4. 사운드 토글
+    function toggleSound() {
+        const btn = document.getElementById('sound-btn');
+        if (!isPlaying) {
+            bgm.play();
+            btn.innerText = "SOUND: ON"; btn.style.opacity = "1";
+            isPlaying = true;
+        } else {
+            bgm.pause();
+            btn.innerText = "SOUND: OFF"; btn.style.opacity = "0.4";
+            isPlaying = false;
+        }
+    }
+
+    // 5. UI 로직 (마우스, 섹션, 모달 등)
+    const dot = document.getElementById('cursor-dot'), outline = document.getElementById('cursor-outline');
+    window.addEventListener('mousemove', e => { dot.style.left = outline.style.left = e.clientX + 'px'; dot.style.top = outline.style.top = e.clientY + 'px'; });
+    
+    function showSection(id) {
+        document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        const m = document.getElementById('m-'+id); if(m) m.classList.add('active');
+        if(id === 'archive') document.getElementById('warning-modal').style.display = 'flex';
+    }
+
+    function acceptWarning() { document.getElementById('warning-modal').style.display = 'none'; }
+    function checkArchive3() {
+        document.getElementById('pw-modal').style.display = 'flex';
+        document.getElementById('pw-input').focus();
+        document.getElementById('pw-input').oninput = function() {
+            if(this.value === '99') { document.getElementById('pw-modal').style.display = 'none'; playStory(3); this.value = ''; }
+        };
+    }
+    function closePw() { document.getElementById('pw-modal').style.display = 'none'; }
+    function playStory(id) { currentLines = storyData[id]; step = 0; document.getElementById('story-viewer').style.display = 'flex'; nextStep(); }
+    function nextStep() { if(isTyping) return; if(step < currentLines.length) { typeText(currentLines[step]); step++; } else { closeViewer(); } }
+    function typeText(txt) {
+        isTyping = true; let i = 0;
+        const target = document.getElementById('viewer-content'); target.innerText = "";
+        typingTimer = setInterval(() => {
+            if (i < txt.length) { target.append(txt.charAt(i)); i++; }
+            else { clearInterval(typingTimer); isTyping = false; target.innerHTML += '<span class="next-arrow">▼</span>'; }
+        }, 40);
+    }
+    function closeViewer(e) { if(e) e.stopPropagation(); document.getElementById('story-viewer').style.display = 'none'; }
+    
+    let sIdx = 0; setInterval(() => {
+        const imgs = document.querySelectorAll('#char-slides img');
+        if(imgs.length > 0) { imgs[sIdx].classList.remove('active'); sIdx = (sIdx + 1) % imgs.length; imgs[sIdx].classList.add('active'); }
+    }, 4000);
+</script>
+</body>
+</html>
