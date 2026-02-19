@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>윤슬당(@yoonseul_dang)</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: #fafafa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; justify-content: center; min-height: 100vh; overflow-x: hidden; }
+        .app-container { background-color: white; width: 100%; max-width: 420px; min-height: 100vh; border-left: 1px solid #dbdbdb; border-right: 1px solid #dbdbdb; position: relative; padding-bottom: 50px; }
+        
+        /* DM 알림 */
+        .dm-notification { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 380px; background: rgba(255,255,255,0.98); border-radius: 15px; padding: 12px; display: flex; align-items: center; gap: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 1000; animation: slideDown 6s ease-in-out forwards; border: 1px solid #efefef; }
+        @keyframes slideDown { 0% { top: -100px; } 10% { top: 20px; } 90% { top: 20px; opacity: 1; } 100% { top: -100px; opacity: 0; } }
+        .dm-icon { width: 42px; height: 42px; border-radius: 50%; overflow: hidden; }
+        .dm-user { font-weight: 700; font-size: 13px; }
+
+        /* BGM Player */
+        .bgm-player { position: absolute; top: 12px; right: 15px; z-index: 20; display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.9); border: 1px solid #dbdbdb; padding: 5px 12px; border-radius: 20px; cursor: pointer; }
+        .bgm-text { font-size: 11px; color: #262626; font-weight: 500; }
+
+        .header { height: 44px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #dbdbdb; position: sticky; top: 0; background: white; z-index: 10; }
+        .header h1 { font-size: 16px; font-weight: 600; }
+
+        .profile { padding: 20px; display: flex; flex-direction: column; }
+        .profile-top { display: flex; align-items: center; margin-bottom: 15px; }
+        .avatar { width: 77px; height: 77px; border-radius: 50%; border: 1px solid #dbdbdb; overflow: hidden; margin-right: 25px; }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .stats { display: flex; gap: 20px; text-align: center; font-size: 14px; }
+        .stat-box b { display: block; font-size: 16px; }
+        
+        .bio { font-size: 14px; line-height: 1.4; margin-bottom: 15px; }
+        .bio-name { font-weight: 600; }
+        .bio-location { color: #00376b; font-size: 13px; margin-bottom: 5px; font-weight: 500; cursor: pointer; }
+        .bio-link { color: #00376b; text-decoration: none; font-weight: 600; }
+
+        .action-buttons { padding: 0 20px 15px; display: flex; gap: 8px; }
+        .btn { flex: 1; background: #efefef; border-radius: 8px; padding: 7px; text-align: center; font-size: 13px; font-weight: 600; cursor: pointer; border: none; }
+        .btn-blue { background: #0095f6; color: white; }
+
+        .highlights { display: flex; gap: 15px; padding: 0 20px 20px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid #efefef; }
+        .highlight-item { display: flex; flex-direction: column; align-items: center; gap: 5px; flex-shrink: 0; cursor: pointer; }
+        .highlight-circle { width: 62px; height: 62px; border-radius: 50%; border: 1px solid #dbdbdb; display: flex; align-items: center; justify-content: center; font-size: 24px; background: #fafafa; padding: 3px; }
+        .highlight-inner { width: 100%; height: 100%; border-radius: 50%; background: #fdfaf5; display: flex; align-items: center; justify-content: center; border: 1px solid #fff; overflow: hidden; }
+        .highlight-text { font-size: 11px; color: #262626; font-weight: 500; }
+
+        /* 무물 레이아웃 */
+        .qna-container { background: #fdfaf5; padding: 15px; border-radius: 15px; border: 1px dashed #a88d75; }
+        .qna-sticker { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 2px 4px 10px rgba(0,0,0,0.05); transform: rotate(-1deg); }
+        .qna-q { font-weight: 800; color: #7a6b5d; font-size: 13px; margin-bottom: 6px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+        .qna-a { font-weight: 600; color: #333; font-size: 14px; line-height: 1.5; }
+
+        .feed-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+        .grid-item { aspect-ratio: 1/1; background: #eee; cursor: pointer; overflow: hidden; }
+        .grid-item img { width: 100%; height: 100%; object-fit: cover; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: white; width: 100%; max-width: 420px; height: 100%; max-height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
+        .modal-header { padding: 12px; display: flex; align-items: center; border-bottom: 1px solid #efefef; position: sticky; top: 0; background: white; z-index: 5; }
+        .back-btn { font-size: 24px; cursor: pointer; margin-right: 15px; }
+        .modal-img { width: 100%; aspect-ratio: 1/1; background: #000; position: relative; }
+        .modal-img img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .tag-icon { position: absolute; bottom: 15px; left: 15px; background: rgba(0,0,0,0.6); color: white; padding: 5px; border-radius: 50%; font-size: 14px; cursor: pointer; }
+        .tag-label { position: absolute; background: rgba(0,0,0,0.8); color: white; padding: 5px 10px; border-radius: 4px; font-size: 12px; display: none; }
+
+        .modal-actions { padding: 12px 15px; display: flex; gap: 18px; font-size: 22px; }
+        .modal-body { padding: 0 15px 20px; }
+        .popular-badge { font-size: 11px; color: #8e8e8e; margin-bottom: 5px; }
+        .likes-info { font-weight: 600; font-size: 14px; margin-bottom: 10px; display: block; }
+        .caption { font-size: 14px; line-height: 1.5; margin-bottom: 15px; }
+        .comments-section { border-top: 1px solid #efefef; padding-top: 15px; }
+        .comment { margin-bottom: 12px; font-size: 14px; }
+        .comment b { margin-right: 6px; }
+        .reply { margin-left: 20px; color: #555; font-size: 13px; border-left: 2px solid #efefef; padding-left: 10px; margin-top: 6px; }
+    </style>
+</head>
+<body>
+
+<div class="dm-notification">
+    <div class="dm-icon"><img src="https://github.com/happyday3026-hash/my-assets/blob/main/images/%EC%9C%A4%EC%8A%AC%EB%8B%B9%EC%85%80%EC%B9%B41.png?raw=true" width="100%"></div>
+    <div class="dm-content">
+        <div class="dm-user">yoonseul_dang</div>
+        <div class="dm-text">빵 50개 다 구웠는데, 언제 옵니까?</div>
+    </div>
+</div>
+
+<div class="app-container">
+    <div class="bgm-player" onclick="toggleBGM()">
+        <span id="bgmIcon">📻</span>
+        <span class="bgm-text" id="bgmTitle">Casa Rosa - Mas Cafe</span>
+    </div>
+    <audio id="bgmAudio" loop>
+        <source src="https://raw.githubusercontent.com/happyday3026-hash/my-assets/main/images/Mas%20Cafe%20-%20Casa%20Rosa.mp3" type="audio/mpeg">
+    </audio>
+
+    <header class="header"><h1>yoonseul_dang ∨</h1></header>
+
+    <section class="profile">
+        <div class="profile-top">
+            <div class="avatar"><img src="https://github.com/happyday3026-hash/my-assets/blob/main/images/%EC%9C%A4%EC%8A%AC%EB%8B%B9%EC%85%80%EC%B9%B41.png?raw=true"></div>
+            <div class="stats">
+                <div class="stat-box"><b>7</b><span>게시물</span></div>
+                <div class="stat-box"><b>18.9k</b><span>팔로워</span></div>
+                <div class="stat-box"><b>1</b><span>팔로잉</span></div>
+            </div>
+        </div>
+        <div class="bio">
+            <div class="bio-name">윤슬당 (서촌 제과점)</div>
+            <div class="bio-location">📍 서울 종로구 누하동 189-2 (서촌)</div>
+            <div>AM 04:00 - 재료 소진 시 마감</div>
+            <div>무뚝뚝한 사장이 취향 맞춰 구워드립니다.</div>
+            <a href="https://share.crack.wrtn.ai/517ehw" target="_blank" class="bio-link">🔗 사장님과 대화하기 (DM)</a>
+        </div>
+    </section>
+
+    <div class="action-buttons">
+        <button class="btn btn-blue">팔로우</button>
+        <button class="btn" onclick="window.open('https://share.crack.wrtn.ai/517ehw')">메세지</button>
+        <button class="btn">연락처</button>
+    </div>
+
+    <div class="highlights">
+        <div class="highlight-item" onclick="openQNA()">
+            <div class="highlight-circle" style="border: 2px solid #ff7675;"><div class="highlight-inner">❓</div></div>
+            <div class="highlight-text">무물보</div>
+        </div>
+        <div class="highlight-item"><div class="highlight-circle"><div class="highlight-inner">📢</div></div><div class="highlight-text">공지</div></div>
+        <div class="highlight-item"><div class="highlight-circle"><div class="highlight-inner">🐈</div></div><div class="highlight-text">소금이</div></div>
+        <div class="highlight-item"><div class="highlight-circle"><div class="highlight-inner">🥐</div></div><div class="highlight-text">오늘의빵</div></div>
+    </div>
+
+    <div class="feed-grid" id="feedGrid"></div>
+</div>
+
+<div class="modal" id="postModal" onclick="if(event.target == this) closeModal()">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="back-btn" onclick="closeModal()">←</span>
+            <div style="display: flex; flex-direction: column;">
+                <span id="modalHeaderName" style="font-weight:600; font-size:14px;">yoonseul_dang</span>
+                <span id="modalLocation" style="font-size:11px; color:#00376b;">서촌 누하동 - 윤슬당</span>
+            </div>
+        </div>
+        <div id="modalImg" class="modal-img"></div>
+        <div id="modalPostUI">
+            <div class="modal-actions">❤️ 💬 ✈️ <span style="margin-left: auto;">🔖</span></div>
+            <div class="modal-body">
+                <div class="popular-badge">인기 게시물에 선정되었습니다.</div>
+                <span class="likes-info">o_o_u님 외 <span id="modalLikes"></span>명이 좋아합니다</span>
+                <div class="caption" id="modalCaption"></div>
+                <div class="upload-time" id="modalTime"></div>
+                <div class="comments-section" id="modalComments"></div>
+            </div>
+        </div>
+        <div id="modalQNAUI" style="display:none; padding: 15px;">
+            <div class="qna-container">
+                <div class="qna-sticker"><div class="qna-q">사장님 MBTI 뭐예요?</div><div class="qna-a">그런 거 모릅니다. 빵 온도나 물어보세요. (ISTJ)</div></div>
+                <div class="qna-sticker"><div class="qna-q">이상형이 어떻게 되세요?</div><div class="qna-a">빵 안 남기고 잘 먹는 사람.</div></div>
+                <div class="qna-sticker"><div class="qna-q">왜 나만 보면 도망가요?</div><div class="qna-a">...오븐 확인하러 가는 겁니다.</div></div>
+                <div class="qna-sticker"><div class="qna-q">사장님 화난 거 아니죠?</div><div class="qna-a">집중하고 있는 겁니다. 화 안 났습니다.</div></div>
+                <div class="qna-sticker"><div class="qna-q">취미가 뭐예요?</div><div class="qna-a">미니어처 제과 도구 수집합니다.</div></div>
+                <div class="qna-sticker"><div class="qna-q">제일 좋아하는 빵은?</div><div class="qna-a">방금 구워져서 김 나는 빵.</div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const audio = document.getElementById('bgmAudio');
+    const bgmTitle = document.getElementById('bgmTitle');
+    const bgmIcon = document.getElementById('bgmIcon');
+    let isPlaying = false;
+
+    function toggleBGM() {
+        if (!isPlaying) { audio.play().catch(() => alert("클릭 후 재생 가능합니다!")); bgmTitle.innerText = "Playing... ♪"; bgmIcon.innerText = "🎵"; isPlaying = true; }
+        else { audio.pause(); bgmTitle.innerText = "Casa Rosa - Mas Cafe"; bgmIcon.innerText = "📻"; isPlaying = false; }
+    }
+
+    const posts = [
+        {
+            img: "https://github.com/happyday3026-hash/my-assets/blob/main/images/%EC%9C%A4%EC%8A%AC%EB%8B%B9%EC%85%80%EC%B9%B41.png?raw=true",
+            likes: "2,892", time: "2시간 전", tag: "@part_time_U",
+            caption: "<b>yoonseul_dang</b> MZ들은 이렇게 찍는다길래... 빵이랑 같이 찍어봤습니다. 이게 맞나요?",
+            comments: [
+                { u: "so_sweet_bread", t: "사장님ㅋㅋㅋㅋ 빵을 얼굴에 박으시면 어떡해요ㅋㅋ" },
+                { u: "yoonseul_dang", t: "분명 렌즈를 보라고 하셨는데.", r: true },
+                { u: "juju_00", t: "아 진짜 하찮고 귀엽닼ㅋㅋㅋ 189cm 거구가 이러고 찍었을 생각하니 현기증남ㅋㅋ" },
+                { u: "cafe_tour", t: "여기 사장님 맛집인가요 빵 맛집인가요? (둘다)" }
+            ]
+        },
+        {
+            img: "https://github.com/happyday3026-hash/my-assets/blob/main/images/%EC%9C%A4%EC%8A%AC%EB%8B%B9%EC%85%80%EC%B9%B42.png?raw=true",
+            likes: "3,401", time: "1일 전", tag: "@salt_cat",
+            caption: "<b>yoonseul_dang</b> 길냥이 이름은 '소금이'로 정했습니다. 빵은 안 줬습니다. 제가 다 먹었습니다.",
+            comments: [
+                { u: "cat_lover_99", t: "사장님 등판 실화냐... 고양이가 사장님 주먹만해요ㅠㅠ" },
+                { u: "yoonseul_dang", t: "제가 좀 큰 편입니다.", r: true },
+                { u: "part_time_U", t: "사장님 저번엔 우유 챙겨주시던데 왜 안준척 하세요ㅋㅋ" }
+            ]
+        },
+        {
+            img: "https://github.com/happyday3026-hash/my-assets/blob/main/images/%EC%9C%A4%EC%8A%AC%EB%8B%B9%EC%85%80%EC%B9%B43.png?raw=true",
+            likes: "1,922", time: "3일 전",
+            caption: "<b>yoonseul_dang</b> 아메리카노 수혈 중. 오븐에 살짝 긁혔는데 알바생이 굳이 반창고를 붙여주네요. 번거롭게.",
+            comments: [
+                { u: "fan_club_dojin", t: "반창고 붙인 큰 손... 핏줄... 오늘 여기 눕습니다 O-<-<" },
+                { u: "part_time_U", t: "사장님 아까 아프다고 0.1초 으악 하셨잖아요!!" },
+                { u: "yoonseul_dang", t: "조용히 하고 빵이나 포장하세요.", r: true }
+            ]
+        },
+        {
+            img: "https://github.com/happyday3026-hash/my-assets/blob/main/images/%EC%9C%A4%EC%8A%AC%EB%8B%B9.png?raw=true",
+            likes: "1,105", time: "4일 전",
+            caption: "<b>yoonseul_dang</b> 오늘 라인업입니다. 다 구워놓고 기다리고 있습니다. 이번엔 안 도망갑니다.",
+            comments: [
+                { u: "dan-gol_01", t: "오 드디어 도망 안 가시나요ㅋㅋㅋ 5분 뒤에 도착합니다!" },
+                { u: "bread_hunter", t: "여기 소금빵 겉바속촉 미쳤음 어제도 퇴근길에 털어감" },
+                { u: "yoonseul_dang", t: "감사합니다. 어제 다 가져가신 분이군요.", r: true }
+            ]
+        },
+        {
+            img: "https://github.com/happyday3026-hash/my-assets/blob/main/images/%EC%9C%A4%EC%8A%AC%EB%8B%B91%20(2).png?raw=true",
+            likes: "892", time: "5일 전",
+            caption: "<b>yoonseul_dang</b> 결이 잘 살았습니다. 손으로 찢었을 때 이 정도는 되어야 빵이죠.",
+            comments: [
+                { u: "gourmet_bakery", t: "와... 저 결 좀 봐. 버터 향이 여기까지 나는 거 같아요" },
+                { u: "yoonseul_dang", t: "좋은 버터를 썼습니다.", r: true }
+            ]
+        },
+        {
+            img: "https://github.com/happyday3026-hash/my-assets/blob/main/images/%EC%9C%A4%EC%8A%AC%EB%8B%B91%20(1).jpg?raw=true",
+            likes: "4,200", time: "1주일 전",
+            caption: "<b>yoonseul_dang</b> 비 오는 날의 윤슬당. 분위기 타다가 온도 1도 더 높이는 거 깜빡할 뻔 했습니다.",
+            comments: [
+                { u: "rainy_mood", t: "여기 창가 자리에서 비 보면서 빵 먹으면 극락임" },
+                { u: "yoonseul_dang", t: "자리 협소하니 빨리 드시고 나가셔야 합니다.", r: true }
+            ]
+        },
+        {
+            img: "https://github.com/happyday3026-hash/my-assets/blob/main/images/%EC%9C%A4%EC%8A%AC%EB%8B%B91%20(1).png?raw=true",
+            likes: "1,550", time: "10일 전",
+            caption: "<b>yoonseul_dang</b> 방금 구워져 나왔습니다. 따뜻할 때 드시러 오세요.",
+            comments: [
+                { u: "bread_st", t: "사장님 저 지금 뛰어가고 있어요 제발 내꺼 남겨줘요" }
+            ]
+        }
+    ];
+
+    const grid = document.getElementById('feedGrid');
+    posts.forEach((p, i) => {
+        const div = document.createElement('div'); div.className = 'grid-item';
+        div.innerHTML = `<img src="${p.img}">`; div.onclick = () => openModal(i);
+        grid.appendChild(div);
+    });
+
+    function openModal(i) {
+        const p = posts[i]; const modal = document.getElementById('postModal');
+        document.getElementById('modalImg').style.display = 'block';
+        document.getElementById('modalImg').innerHTML = `<img src="${p.img}"><div class="tag-icon" onclick="toggleTag()">👤</div><div id="tagLabel" class="tag-label" style="top:50%; left:50%;">${p.tag || ''}</div>`;
+        if(!p.tag) document.querySelector('.tag-icon').style.display = 'none';
+        document.getElementById('modalLikes').innerText = p.likes;
+        document.getElementById('modalCaption').innerHTML = p.caption;
+        document.getElementById('modalTime').innerText = p.time;
+        document.getElementById('modalPostUI').style.display = 'block';
+        document.getElementById('modalQNAUI').style.display = 'none';
+        document.getElementById('modalHeaderName').innerText = 'yoonseul_dang';
+        document.getElementById('modalLocation').style.display = 'block';
+        const commsDiv = document.getElementById('modalComments');
+        commsDiv.innerHTML = p.comments.map(c => `<div class="comment ${c.r?'reply':''}"><b>${c.u}</b>${c.t}</div>`).join('');
+        modal.style.display = 'flex'; document.body.style.overflow = 'hidden';
+    }
+
+    function toggleTag() { const label = document.getElementById('tagLabel'); label.style.display = label.style.display === 'block' ? 'none' : 'block'; }
+
+    function openQNA() {
+        const modal = document.getElementById('postModal');
+        document.getElementById('modalImg').style.display = 'none';
+        document.getElementById('modalPostUI').style.display = 'none';
+        document.getElementById('modalQNAUI').style.display = 'block';
+        document.getElementById('modalHeaderName').innerText = '무엇이든 물어보세요';
+        document.getElementById('modalLocation').style.display = 'none';
+        modal.style.display = 'flex'; document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() { document.getElementById('postModal').style.display = 'none'; document.body.style.overflow = 'auto'; }
+</script>
+</body>
+</html>
